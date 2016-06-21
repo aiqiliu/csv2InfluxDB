@@ -18,9 +18,21 @@ for f in lst:
 				line.append(f[:-4]) #filename -> tableName
 				for header in headers[1:]: #skip timestamp and append at last
 					# parse through each column
-					line.append(str(header) + '=' + str(row[header]))
+					if row[header] != '':
+						#cell not null
+						if str(row[header]).isdigit():							
+							content = str(row[header])
+						elif '"' in row[header]:
+							content = str(row[header])
+						else:
+							#not numeric and not already wrapped in double quotes
+							content = '"'+str(row[header])+'"'
+						line.append(str(header) + '=' + content)
+					else:
+						#cell is null
+						line.append(str(header) + '=' + '"NULL"')
 					# print str(header) + '=' + str(row[header])
-				line = ','.join(line)
+				line = line[0] + ' ' + ','.join(line[1:])
 				line += ' ' + str(row[headers[0]])
 				txt.append(line)
 		txt = '\n'.join(txt)
