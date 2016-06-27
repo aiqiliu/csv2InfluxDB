@@ -22,15 +22,17 @@ for f in lst:
 						#cell not null
 						if str(row[header]).isdigit():							
 							content = str(row[header])
-						elif '"' in row[header]:
-							content = str(row[header])
-						else:
-							#not numeric and not already wrapped in double quotes
-							content = '"'+str(row[header])+'"'
-						line.append(str(header) + '=' + content)
-					else:
-						#cell is null
-						line.append(str(header) + '=' + '"NULL"')
+							line.append(str(header) + '=' + content)
+					# 	elif '"' in row[header]:
+					# 		content = str(row[header])
+					# 	else:
+					# 		#not numeric and not already wrapped in double quotes
+					# 		content = '"'+str(row[header])+'"'
+					# 	line.append(str(header) + '=' + content)
+					# else:
+					# 	#cell is null
+					# 	line.append(str(header) + '=' + '"NULL"')
+
 					# print str(header) + '=' + str(row[header])
 				line = line[0] + ' ' + ','.join(line[1:])
 				line += ' ' + str(row[headers[0]])
@@ -42,7 +44,7 @@ for f in lst:
 		file.write(txt)
 		print "file saved at " + './output/' + f[:-4] + '.txt'
 		file.close	
-			
+		sys.exit()
 	
 
 
