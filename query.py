@@ -38,15 +38,12 @@ def writeDb(importPath, client, singleOrBatch):
 		# batch import. import files in dir 
 		if importPath[-1] != '/':
 			importPath += '/'
-		fileList = []
-		for fFileObj in os.walk(importPath): 
-			fileList = fFileObj[2]
-			break
+		fileList = os.listdir(importPath)
 		for f in fileList:
-			if f != '.Dstore':
-				client.create_database(f)
-				print "Database " + f + "created"
-				importData(f, importPath + f)
+			if '.txt' in f:
+				client.create_database(f[:-4])
+				print "Database " + f[:-4] + "created"
+				importData(f[:-4], importPath + f)
 
 
 def importData(dbName, importPath):
