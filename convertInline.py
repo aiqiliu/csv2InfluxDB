@@ -15,7 +15,7 @@ for f in lst:
 			for row in reader:
 				#parse throguh each row
 				line = []
-				line.append(f[:-4]) #filename -> tableName
+				line.append("allTables,") #filename -> tableName
 				for header in headers[1:]: #skip timestamp and append at last
 					# parse through each column
 					if row[header] != '':
@@ -34,7 +34,7 @@ for f in lst:
 						line.append(str(header) + '=' + '"NULL"')
 
 					# print str(header) + '=' + str(row[header])
-				line = line[0] + ' ' + ','.join(line[1:])
+				line = line[0] + 'tableName=' + f[:-4] + ' ' + ','.join(line[1:])
 				line += ' ' + str(row[headers[0]])
 				txt.append(line)
 		txt = '\n'.join(txt)

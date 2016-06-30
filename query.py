@@ -6,33 +6,32 @@ client = InfluxDBClient('localhost', 8086, 'root', 'root')
 
 def create():
 	currdb = [x['name'] for x in client.get_list_database()]
-	print "Your current tables are: "
-	print ", ".join(str(x) for x in currdb)
-	
+	print "Your current databases are: "
+	print ", ".join(str(x) for x in currdb)	
+	dbName = raw_input("Enter db name: ")
+	client.create_database(dbName)
+	print "Database " + dbName + " created"
 	oneOrMultiple = raw_input("Create one table: 1, Create multiple tables: 2: ")
 	if oneOrMultiple == "1":		
-		createOne()
+		createOne(dbName)
 	else:
-		createMultiple()
+		createMultiple(dbName)
 
-def createOne():	
+def createOne(dbName):	
 	importPath = pathExist()
-	writeDb(importPath, client, 1)
+	writeDb(importPath, client, 1, dbName)
 
-def createMultiple():
+def createMultiple(dbName):
 	importPath = pathExist()
-	writeDb(importPath, client, 2)
+	writeDb(importPath, client, 2, dbName)
 
 
-def writeDb(importPath, client, singleOrBatch):
+def writeDb(importPath, client, singleOrBatch, dbName):
 	# sample post request
 	# curl -i -XPOST 'http://localhost:8086/write?db=mydb' --data-binary @cpu_data.txt
 	if singleOrBatch == 1:
-		print "import path is: " + importPath
-		dbName = importPath.split('/')[-1][:-4] #segment the path and grab the filename
-		print "The db name is: " + dbName
-		client.create_database(dbName)
-		print "Database " + dbName + " created"
+		# dbName = importPath.split('/')[-1][:-4] #segment the path and grab the filename
+		# print "The db name is: " + dbName
 		importData(dbName, importPath)
 	else:
 		# batch import. import files in dir 
@@ -41,13 +40,12 @@ def writeDb(importPath, client, singleOrBatch):
 		fileList = os.listdir(importPath)
 		for f in fileList:
 			if '.txt' in f:
-				client.create_database(f[:-4])
-				print "Database " + f[:-4] + "created"
-				importData(f[:-4], importPath + f)
+				importData(dbName, importPath + f)
+				print "Table " + f[:-4] + " imported"
 
 
 def importData(dbName, importPath):
-	url = "http://localhost:8086/write?db=" + str(dbName)
+	url = "http://localhost:8086/write?db=" + str(dbName) + "&precision=ms"
 	queryStr = "curl -i -XPOST " + "'%s'" % url + "  --data-binary @" + importPath
 	subprocess.call(queryStr, shell=True)
 
@@ -65,14 +63,22 @@ def pathExist():
 		return importPath
 
 def query():
-	return None
+	# aggregation every four minutes 	
+	currdb = [x['name'] for x in client.get_list_database()]
+	print "Your current databases are: "
+	print ", ".join(str(x) for x in currdb)	
+	queryDb = raw_input("Enter the database that you're querying from: ")
+	client = InfluxDBClient('localhost', 8086, 'root', 'root', queryDb)
 
-
-
+	#get the time range
+	minTime = client.query('SELECT TEMP FROM /.*/ LIMIT 1')
+	minTime = minTime.raw['series'][0]['values'][0][0]
+	maxTime = client.query('SELECT TEMP FROM /.*/ ORDER BY time DESC LIMIT 1')
+	maxTime = maxTime.raw['series'][0]['values'][0][0]
+	
 # result = client.query('SELECT TEMP FROM /.*/ LIMIT 1')
 # print result.raw['series'][0]['values'][0][1]
-
-
+	
 if __name__ == "__main__":
 	# ================ Connecting to db ===========================
 	print "Are you creating a database or querying?"
@@ -81,3 +87,23 @@ if __name__ == "__main__":
 		create()
 	else:
 		query()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
