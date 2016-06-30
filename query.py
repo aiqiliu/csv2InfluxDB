@@ -2,9 +2,9 @@
 import subprocess, os, sys, re
 from influxdb import InfluxDBClient
 
-client = InfluxDBClient('localhost', 8086, 'root', 'root')
 
 def create():
+	client = InfluxDBClient('localhost', 8086, 'root', 'root')
 	currdb = [x['name'] for x in client.get_list_database()]
 	print "Your current databases are: "
 	print ", ".join(str(x) for x in currdb)	
@@ -64,6 +64,7 @@ def pathExist():
 
 def query():
 	# aggregation every four minutes 	
+	client = InfluxDBClient('localhost', 8086, 'root', 'root')
 	currdb = [x['name'] for x in client.get_list_database()]
 	print "Your current databases are: "
 	print ", ".join(str(x) for x in currdb)	
@@ -73,9 +74,13 @@ def query():
 	#get the time range
 	minTime = client.query('SELECT TEMP FROM /.*/ LIMIT 1')
 	minTime = minTime.raw['series'][0]['values'][0][0]
+	print minTime
 	maxTime = client.query('SELECT TEMP FROM /.*/ ORDER BY time DESC LIMIT 1')
 	maxTime = maxTime.raw['series'][0]['values'][0][0]
-	
+	print maxTime
+	querymsg = 'SELECT MIN(TEMP) FROM /.*/ WHERE time >= ' + "'" + minTime + "'" + ' AND time<= ' + "'" + maxTime + "'" + ' GROUP BY time(4m)'
+	result = client.query(querymsg)
+	print result.raw
 # result = client.query('SELECT TEMP FROM /.*/ LIMIT 1')
 # print result.raw['series'][0]['values'][0][1]
 	
