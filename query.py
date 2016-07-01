@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import subprocess, os, sys, re
+import subprocess, os, sys, re, datetime, iso8601
 from influxdb import InfluxDBClient
 
 
@@ -74,15 +74,50 @@ def query():
 	#get the time range
 	minTime = client.query('SELECT TEMP FROM /.*/ LIMIT 1')
 	minTime = minTime.raw['series'][0]['values'][0][0]
-	print minTime
+
 	maxTime = client.query('SELECT TEMP FROM /.*/ ORDER BY time DESC LIMIT 1')
 	maxTime = maxTime.raw['series'][0]['values'][0][0]
-	print maxTime
-	querymsg = 'SELECT MIN(TEMP) FROM /.*/ WHERE time >= ' + "'" + minTime + "'" + ' AND time<= ' + "'" + maxTime + "'" + ' GROUP BY time(4m)'
-	result = client.query(querymsg)
-	print result.raw
-# result = client.query('SELECT TEMP FROM /.*/ LIMIT 1')
-# print result.raw['series'][0]['values'][0][1]
+	print "Time range of the entire db: " + minTime + ' - ' + maxTime
+
+	# collection of the mininum results in the 4mins windows
+	mins = []
+	currTime = minTime
+	iterator = 1
+	while iso8601.parse_date(currTime) < iso8601.parse_date(maxTime):
+		# upper bound for the 4mins window
+		upperBound = iso8601.parse_date(currTime) + datetime.timedelta(minutes=4)
+		if upperBound > iso8601.parse_date(maxTime):
+			upperBound = iso8601.parse_date(maxTime)
+		upperBound = str(upperBound).replace(' ', 'T')
+		print '==============' + ' Window ' + str(iterator) + ' ' + '=============='
+		print "Parsing time window: " + currTime + ' - ' + str(upperBound)
+		# query MIN only when there are more than one time stamp in the 4mins window
+		countQuerymsg = "SELECT COUNT(TEMP) FROM /.*/ WHERE time >= " + "'" + currTime + "'" + ' AND time <= ' + "'" + upperBound + "'" 
+		count = client.query(countQuerymsg)
+
+
+		if count.raw == {}:
+			print "No timestamp in range"
+			currMin = 0
+		else:
+			count = count.raw['series'][0]['values'][0][1]
+			print "Num of timestamps: " + str(count)
+
+			if count > 1:
+				print "More than 1 timestamp in this window"
+				querymsg = 'SELECT MIN(TEMP) FROM /.*/ WHERE time >= ' + "'" + currTime + "'" + ' AND time<= ' + "'" + upperBound + "'"  
+				currMin = client.query(querymsg)
+				currMin = currMin.raw['series'][0]['values'][0][1]
+				print "curr min is: " + str(currMin)
+			elif count <= 1:
+				currMin = 0
+
+		mins.append(currMin)
+		currTime = upperBound
+		iterator += 1
+
+	print mins
+	print "Num of time windows parsed: " + str(iterator)
 	
 if __name__ == "__main__":
 	# ================ Connecting to db ===========================
